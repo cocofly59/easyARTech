@@ -1,0 +1,3 @@
+[submodule "back"]
+	path = back
+	url = https://github.com/cocofly59/easyARTech-back
