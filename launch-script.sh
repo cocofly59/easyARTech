@@ -35,7 +35,7 @@ INFRA_PID="${DIRECTORY_PID}/infra.pid"
 function clean_log() {
   if [[ -f "$1" ]]
   then
-    rm $1
+    rm "$1"
   fi
 }
 
@@ -61,7 +61,7 @@ function quit_front() {
     then
       pid=$(cat $FRONT_PID)
       echo "[INFO] Turning off front server ($pid)"
-      kill $pid
+      kill "$pid"
       rm $FRONT_PID
     else
       echo "[WARNING] Cannot stop the front server : cannot find the PID."
@@ -76,7 +76,7 @@ function quit_infra() {
     then
       pid=$(cat $INFRA_PID)
       echo "[INFO] Killing infra log process ($pid)"
-      kill $pid
+      kill "$pid"
       rm $INFRA_PID
     fi
     echo "[INFO] Turning off infra."
@@ -127,7 +127,7 @@ function is_back_started() {
 }
 
 function help() {
-    echo $1
+    echo "$1"
     echo
     echo "Usage:"
     echo "------"
@@ -186,7 +186,7 @@ clean_log $FRONT_LOGS
 clean_log $INFRA_LOGS
 
 # Go into the root folder
-cd $SCRIPT_DIR || exit 1
+cd "$SCRIPT_DIR" || exit 1
 
 
 # start infra
@@ -209,25 +209,47 @@ done
 echo "[INFO] infra started"
 
 # start back
-quit_back
-if $WITH_BACK
+if is_back_started
 then
-  mvn -f back -Plocal,start &> $BACK_LOGS &
-  echo $! > $BACK_PID
-  echo "[INFO] Back server started."
+  echo "[INFO] Back already started"
+  if ! $WITH_BACK
+  then
+    echo "[INFO] Stopping back as required"
+    BACK_LOGS=""
+    quit_back
+  fi
 else
-  BACK_LOGS=""
+  if $WITH_BACK
+  then
+    echo "[INFO] Starting back"
+    mvn -f back -Plocal,start &> "$BACK_LOGS" &
+    echo $! > $BACK_PID
+    echo "[INFO] Back server started."
+  else
+    BACK_LOGS=""
+  fi
 fi
 
 #start front
-quit_front
-if $WITH_FRONT
+if is_front_started
 then
-  mvn -f front -Plocal,start &> $FRONT_LOGS &
-  echo $! > $FRONT_PID
-  echo "[INFO] Front server started."
+  echo "[INFO] Front already started"
+  if ! $WITH_FRONT
+  then
+    echo "[INFO] Stopping front as required"
+    FRONT_LOGS=""
+    quit_front
+  fi
 else
-  FRONT_LOGS=""
+  if $WITH_FRONT
+  then
+    echo "[INFO] Starting front"
+    mvn -f front -Plocal,start &> "$FRONT_LOGS" &
+    echo $! > $FRONT_PID
+    echo "[INFO] Front server started."
+  else
+    FRONT_LOGS=""
+  fi
 fi
 
 # display all logs
